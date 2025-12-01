@@ -5,6 +5,7 @@ import { Provider } from "jotai";
 import type { ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/provider";
 import { GitHubStarsProvider } from "@/components/github-stars-provider";
+import { MembraneProvider } from "@/components/membrane-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { PersistentCanvas } from "@/components/workflow/persistent-canvas";
@@ -12,9 +13,24 @@ import { mono, sans } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  ),
   title: "AI Workflow Builder - Visual Workflow Automation",
   description:
     "Build powerful AI-driven workflow automations with a visual, node-based editor. Built with Next.js and React Flow.",
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/favicon.ico",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -61,8 +77,12 @@ const RootLayout = async ({ children }: RootLayoutProps) => {
   const stars = await getGitHubStars();
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn(sans.variable, mono.variable, "antialiased")}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(sans.variable, mono.variable)}
+    >
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -71,15 +91,17 @@ const RootLayout = async ({ children }: RootLayoutProps) => {
         >
           <Provider>
             <AuthProvider>
-              <GitHubStarsProvider stars={stars}>
-                <ReactFlowProvider>
-                  <PersistentCanvas />
-                  <div className="pointer-events-none relative z-10">
-                    {children}
-                  </div>
-                </ReactFlowProvider>
-              </GitHubStarsProvider>
-              <Toaster />
+              <MembraneProvider>
+                <GitHubStarsProvider stars={stars}>
+                  <ReactFlowProvider>
+                    <PersistentCanvas />
+                    <div className="pointer-events-none relative z-10">
+                      {children}
+                    </div>
+                  </ReactFlowProvider>
+                </GitHubStarsProvider>
+                <Toaster />
+              </MembraneProvider>
             </AuthProvider>
           </Provider>
         </ThemeProvider>

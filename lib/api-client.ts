@@ -596,10 +596,17 @@ export const workflowApi = {
   })(),
 };
 
+// Membrane API
+export const membraneApi = {
+  // Get token for Membrane integration
+  getToken: () => apiCall<{ token: string }>("/api/integration-app/token"),
+};
+
 // Export all APIs as a single object
 export const api = {
   ai: aiApi,
   integration: integrationApi,
   user: userApi,
   workflow: workflowApi,
+  membrane: membraneApi,
 };
