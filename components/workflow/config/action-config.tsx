@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -722,42 +724,48 @@ export function ActionConfig({
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="System">
-                <div className="flex items-center gap-2">
-                  <Settings className="size-4" />
-                  <span>System</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="AI Gateway">
-                <div className="flex items-center gap-2">
-                  <IntegrationIcon className="size-4" integration="vercel" />
-                  <span>AI Gateway</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="Linear">
-                <div className="flex items-center gap-2">
-                  <IntegrationIcon className="size-4" integration="linear" />
-                  <span>Linear</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="Resend">
-                <div className="flex items-center gap-2">
-                  <IntegrationIcon className="size-4" integration="resend" />
-                  <span>Resend</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="Slack">
-                <div className="flex items-center gap-2">
-                  <IntegrationIcon className="size-4" integration="slack" />
-                  <span>Slack</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="Firecrawl">
-                <div className="flex items-center gap-2">
-                  <IntegrationIcon className="size-4" integration="firecrawl" />
-                  <span>Firecrawl</span>
-                </div>
-              </SelectItem>
+              <SelectGroup>
+                <SelectLabel>Apps</SelectLabel>
+                <SelectItem value="Slack">
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon className="size-4" integration="slack" />
+                    <span>Slack</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="Linear">
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon className="size-4" integration="linear" />
+                    <span>Linear</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="AI Gateway">
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon className="size-4" integration="vercel" />
+                    <span>AI Gateway</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="Firecrawl">
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon className="size-4" integration="firecrawl" />
+                    <span>Firecrawl</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="Resend">
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon className="size-4" integration="resend" />
+                    <span>Resend</span>
+                  </div>
+                </SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel>Others</SelectLabel>
+                <SelectItem value="System">
+                  <div className="flex items-center gap-2">
+                    <Settings className="size-4" />
+                    <span>System</span>
+                  </div>
+                </SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
         </div>

@@ -50,8 +50,6 @@ import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
 import { IntegrationSelector } from "../ui/integration-selector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ActionConfig } from "./config/action-config";
-import { ActionGrid } from "./config/action-grid";
-
 import { TriggerConfig } from "./config/trigger-config";
 import { generateNodeCode } from "./utils/code-generators";
 import { WorkflowRuns } from "./workflow-runs";
@@ -575,54 +573,38 @@ export const PanelInner = () => {
               />
             )}
 
-            {selectedNode.data.type === "action" &&
-            !selectedNode.data.config?.actionType ? (
-              <ActionGrid
-                disabled={isGenerating}
-                onSelectAction={(actionType) =>
-                  handleUpdateConfig("actionType", actionType)
-                }
-              />
-            ) : null}
-
-            {selectedNode.data.type === "action" &&
-            selectedNode.data.config?.actionType ? (
+            {selectedNode.data.type === "action" && (
               <ActionConfig
                 config={selectedNode.data.config || {}}
                 disabled={isGenerating}
                 onUpdateConfig={handleUpdateConfig}
               />
-            ) : null}
+            )}
 
-            {selectedNode.data.type !== "action" ||
-            selectedNode.data.config?.actionType ? (
-              <>
-                <div className="space-y-2">
-                  <Label className="ml-1" htmlFor="label">
-                    Label
-                  </Label>
-                  <Input
-                    disabled={isGenerating}
-                    id="label"
-                    onChange={(e) => handleUpdateLabel(e.target.value)}
-                    value={selectedNode.data.label}
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label className="ml-1" htmlFor="label">
+                Label
+              </Label>
+              <Input
+                disabled={isGenerating}
+                id="label"
+                onChange={(e) => handleUpdateLabel(e.target.value)}
+                value={selectedNode.data.label}
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label className="ml-1" htmlFor="description">
-                    Description
-                  </Label>
-                  <Input
-                    disabled={isGenerating}
-                    id="description"
-                    onChange={(e) => handleUpdateDescription(e.target.value)}
-                    placeholder="Optional description"
-                    value={selectedNode.data.description || ""}
-                  />
-                </div>
-              </>
-            ) : null}
+            <div className="space-y-2">
+              <Label className="ml-1" htmlFor="description">
+                Description
+              </Label>
+              <Input
+                disabled={isGenerating}
+                id="description"
+                onChange={(e) => handleUpdateDescription(e.target.value)}
+                placeholder="Optional description"
+                value={selectedNode.data.description || ""}
+              />
+            </div>
           </div>
           {selectedNode.data.type === "action" && (
             <div className="flex shrink-0 items-center justify-between border-t p-4">
