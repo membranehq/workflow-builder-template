@@ -81,6 +81,7 @@ import {
 import { Panel } from "../ai-elements/panel";
 import { DeployButton } from "../deploy-button";
 import { GitHubStarsButton } from "../github-stars-button";
+import { ManageIntegrationsModal } from "../manage-integrations-modal/manage-integrations-modal";
 import { WorkflowIcon } from "../ui/workflow-icon";
 import { UserMenu } from "../workflows/user-menu";
 import { PanelInner } from "./node-config-panel";
@@ -1191,6 +1192,7 @@ export const WorkflowToolbar = ({ workflowId }: WorkflowToolbarProps) => {
                 <DeployButton />
               </>
             )}
+            <ManageIntegrationsModal />
             <UserMenu />
           </div>
         </div>
