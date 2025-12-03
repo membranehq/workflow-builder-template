@@ -21,6 +21,20 @@ import { SchemaBuilder, type SchemaField } from "./schema-builder";
 import { useIntegrations, useActions, type Action } from "@membranehq/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import Form from "@rjsf/core";
+import type { RJSFSchema } from "@rjsf/utils";
+import validator from "@rjsf/validator-ajv8";
+import {
+  CustomTextWidget,
+  CustomTextareaWidget,
+  CustomSelectWidget,
+  CustomDateWidget,
+  CustomDateTimeWidget,
+  CustomTimeWidget,
+  CustomCheckboxWidget,
+  CustomFieldTemplate,
+  CustomArrayFieldTemplate,
+} from "./json-schema-form-theme";
 
 type ActionConfigProps = {
   config: Record<string, unknown>;
@@ -454,7 +468,7 @@ export function ActionConfig({
         />
       )}
 
-      {/* Integration action schema visualization */}
+      {/* Integration action input form */}
       {categoryType === "Integration" && config?.actionId && (() => {
         const selectedAction = actionsForSelectedIntegration.items.find(
           (a) => a.id === config.actionId
@@ -462,12 +476,43 @@ export function ActionConfig({
 
         if (!selectedAction?.inputSchema) return null;
 
+        const schema = selectedAction.inputSchema as RJSFSchema;
+        const formData = config?.actionInputs as Record<string, unknown> || {};
+
         return (
           <div className="space-y-2">
-            <Label>Action Input Schema</Label>
-            <pre className="rounded-md border bg-muted p-4 text-xs overflow-auto max-h-96">
-              {JSON.stringify(selectedAction.inputSchema, null, 2)}
-            </pre>
+            <Label>Action Configuration</Label>
+            <div className="rounded-md border bg-background p-4">
+              <Form
+                schema={schema}
+                formData={formData}
+                validator={validator}
+                onChange={(e) => onUpdateConfig("actionInputs", e.formData)}
+                disabled={disabled}
+                templates={{
+                  FieldTemplate: CustomFieldTemplate,
+                  ArrayFieldTemplate: CustomArrayFieldTemplate,
+                }}
+                widgets={{
+                  TextWidget: CustomTextWidget,
+                  TextareaWidget: CustomTextareaWidget,
+                  SelectWidget: CustomSelectWidget,
+                  EmailWidget: CustomTextWidget,
+                  URLWidget: CustomTextWidget,
+                  DateWidget: CustomDateWidget,
+                  DateTimeWidget: CustomDateTimeWidget,
+                  TimeWidget: CustomTimeWidget,
+                  CheckboxWidget: CustomCheckboxWidget,
+                }}
+                uiSchema={{
+                  "ui:submitButtonOptions": {
+                    norender: true,
+                  },
+                }}
+              >
+                <div />
+              </Form>
+            </div>
           </div>
         );
       })()}
