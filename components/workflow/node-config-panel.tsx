@@ -544,7 +544,7 @@ export const PanelInner = () => {
             Properties
           </TabsTrigger>
           {selectedNode.data.type !== "trigger" ||
-          (selectedNode.data.config?.triggerType as string) !== "Manual" ? (
+            (selectedNode.data.config?.triggerType as string) !== "Manual" ? (
             <TabsTrigger
               className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
               value="code"
@@ -697,12 +697,11 @@ export const PanelInner = () => {
                 language = "typescript";
               }
             } else {
-              filename = `steps/${
-                (selectedNode.data.config?.actionType as string)
-                  ?.toLowerCase()
-                  .replace(/\s+/g, "-")
-                  .replace(/[^a-z0-9-]/g, "") || "action"
-              }-step.ts`;
+              filename = `steps/${(selectedNode.data.config?.actionType as string)
+                ?.toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/[^a-z0-9-]/g, "") || "action"
+                }-step.ts`;
             }
 
             return (
