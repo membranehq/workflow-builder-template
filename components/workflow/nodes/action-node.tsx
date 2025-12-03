@@ -243,7 +243,11 @@ export const ActionNode = memo(({ data, selected, id }: ActionNodeProps) => {
     return null;
   }
 
-  const actionType = (data.config?.actionType as string) || "";
+  // Support both old actionType field and new actionId/actionName fields
+  const actionType = (data.config?.actionType as string) || (data.config?.actionId as string) || "";
+  const actionName = (data.config?.actionName as string) || "";
+  const actionLogoUrl = (data.config?.actionLogoUrl as string) || null;
+  const categoryType = (data.config?.categoryType as string) || null;
   const status = data.status;
 
   // Check if this node has a generated image from the selected execution
@@ -255,7 +259,7 @@ export const ActionNode = memo(({ data, selected, id }: ActionNodeProps) => {
     isBase64ImageOutput(nodeLog.output);
 
   // Handle empty action type (new node without selected action)
-  if (!actionType) {
+  if (!actionType && !actionName) {
     const isDisabled = data.enabled === false;
     return (
       <Node
@@ -287,9 +291,9 @@ export const ActionNode = memo(({ data, selected, id }: ActionNodeProps) => {
     );
   }
 
-  const displayTitle = data.label || actionType;
-  const displayDescription =
-    data.description || getIntegrationFromActionType(actionType);
+  const displayTitle = data.label || actionName || actionType;
+  const displayDescription = data.description || 
+    (categoryType === "Integration" ? "Integration" : getIntegrationFromActionType(actionType));
 
   const needsIntegration = requiresIntegration(actionType);
   const integrationMissing =
@@ -342,6 +346,14 @@ export const ActionNode = memo(({ data, selected, id }: ActionNodeProps) => {
         {hasGeneratedImage ? (
           <GeneratedImageThumbnail
             base64={(nodeLog.output as { base64: string }).base64}
+          />
+        ) : actionLogoUrl ? (
+          <Image
+            src={actionLogoUrl}
+            alt={actionName || "Integration"}
+            width={48}
+            height={48}
+            className="size-12 rounded"
           />
         ) : (
           getProviderLogo(actionType)

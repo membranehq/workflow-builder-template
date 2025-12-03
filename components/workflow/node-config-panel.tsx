@@ -45,9 +45,7 @@ import {
   updateNodeDataAtom,
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
-import { IntegrationsDialog } from "../settings/integrations-dialog";
 import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
-import { IntegrationSelector } from "../ui/integration-selector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ActionConfig } from "./config/action-config";
 import { TriggerConfig } from "./config/trigger-config";
@@ -153,7 +151,6 @@ export const PanelInner = () => {
   const [showDeleteNodeAlert, setShowDeleteNodeAlert] = useState(false);
   const [showDeleteEdgeAlert, setShowDeleteEdgeAlert] = useState(false);
   const [showDeleteRunsAlert, setShowDeleteRunsAlert] = useState(false);
-  const [showIntegrationsDialog, setShowIntegrationsDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useAtom(propertiesPanelActiveTabAtom);
   const refreshRunsRef = useRef<(() => Promise<void>) | null>(null);
@@ -249,9 +246,19 @@ export const PanelInner = () => {
     }
   };
 
-  const handleUpdateConfig = (key: string, value: string) => {
+  const handleUpdateConfig = (key: string | Record<string, unknown>, value?: unknown) => {
     if (selectedNode) {
-      const newConfig = { ...selectedNode.data.config, [key]: value };
+      let updates: Record<string, unknown>;
+
+      if (typeof key === 'string') {
+        // Single key-value update
+        updates = { [key]: value };
+      } else {
+        // Batch update with object
+        updates = key;
+      }
+
+      const newConfig = { ...selectedNode.data.config, ...updates };
       updateNodeData({ id: selectedNode.id, data: { config: newConfig } });
     }
   };
@@ -519,11 +526,6 @@ export const PanelInner = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        <IntegrationsDialog
-          onOpenChange={setShowIntegrationsDialog}
-          open={showIntegrationsDialog}
-        />
       </>
     );
   }
@@ -633,38 +635,6 @@ export const PanelInner = () => {
                   <Trash2 className="size-4" />
                 </Button>
               </div>
-
-              {(() => {
-                const actionType = selectedNode.data.config
-                  ?.actionType as string;
-                const integrationMap = {
-                  "Send Email": "resend",
-                  "Send Slack Message": "slack",
-                  "Create Ticket": "linear",
-                  "Find Issues": "linear",
-                  "Generate Text": "ai-gateway",
-                  "Generate Image": "ai-gateway",
-                  "Database Query": "database",
-                  Scrape: "firecrawl",
-                  Search: "firecrawl",
-                } as const;
-
-                const integrationType =
-                  actionType &&
-                  integrationMap[actionType as keyof typeof integrationMap];
-
-                return integrationType ? (
-                  <IntegrationSelector
-                    integrationType={integrationType}
-                    label="Integration"
-                    onChange={(id) => handleUpdateConfig("integrationId", id)}
-                    onOpenSettings={() => setShowIntegrationsDialog(true)}
-                    value={
-                      (selectedNode.data.config?.integrationId as string) || ""
-                    }
-                  />
-                ) : null;
-              })()}
             </div>
           )}
           {selectedNode.data.type === "trigger" && (
@@ -813,11 +783,6 @@ export const PanelInner = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <IntegrationsDialog
-        onOpenChange={setShowIntegrationsDialog}
-        open={showIntegrationsDialog}
-      />
     </>
   );
 };

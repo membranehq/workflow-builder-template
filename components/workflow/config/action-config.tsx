@@ -24,7 +24,7 @@ import Image from "next/image";
 
 type ActionConfigProps = {
   config: Record<string, unknown>;
-  onUpdateConfig: (key: string, value: string) => void;
+  onUpdateConfig: (key: string | Record<string, unknown>, value?: unknown) => void;
   disabled: boolean;
 };
 
@@ -46,7 +46,7 @@ function DatabaseQueryFields({
   disabled,
 }: {
   config: Record<string, unknown>;
-  onUpdateConfig: (key: string, value: string) => void;
+  onUpdateConfig: (key: string | Record<string, unknown>, value?: unknown) => void;
   disabled: boolean;
 }) {
   return (
@@ -99,7 +99,7 @@ function HttpRequestFields({
   disabled,
 }: {
   config: Record<string, unknown>;
-  onUpdateConfig: (key: string, value: string) => void;
+  onUpdateConfig: (key: string | Record<string, unknown>, value?: unknown) => void;
   disabled: boolean;
 }) {
   return (
@@ -190,7 +190,7 @@ function ConditionFields({
   disabled,
 }: {
   config: Record<string, unknown>;
-  onUpdateConfig: (key: string, value: string) => void;
+  onUpdateConfig: (key: string | Record<string, unknown>, value?: unknown) => void;
   disabled: boolean;
 }) {
   return (
@@ -277,17 +277,31 @@ export function ActionConfig({
 
     if (!category) return;
 
-    onUpdateConfig("categoryKey", newCategoryKey);
-    onUpdateConfig("categoryType", category.type);
-    onUpdateConfig("actionId", "");
+    // Batch all config updates together in a single call
+    onUpdateConfig({
+      categoryKey: newCategoryKey,
+      categoryType: category.type,
+      actionId: "",
+    });
   };
 
   const handleActionChange = (value: string) => {
-    // Store the selected action ID (works for both System and Integration actions)
-    onUpdateConfig("actionId", value);
+    // For System actions, the value IS the action name
+    if (categoryType === "System") {
+      onUpdateConfig({
+        actionId: value,
+        actionName: value,
+      });
+    } else if (categoryType === "Integration") {
+      // For Integration actions, find the action to get its name and logo
+      const action = actionsForSelectedIntegration.items.find((a) => a.id === value);
+      onUpdateConfig({
+        actionId: value,
+        actionName: action?.name || value,
+        actionLogoUrl: action?.integration?.logoUri || null,
+      });
+    }
   };
-
-  console.log("categoryKey", categoryKey);
 
   return (
     <>
@@ -439,6 +453,24 @@ export function ActionConfig({
           onUpdateConfig={onUpdateConfig}
         />
       )}
+
+      {/* Integration action schema visualization */}
+      {categoryType === "Integration" && config?.actionId && (() => {
+        const selectedAction = actionsForSelectedIntegration.items.find(
+          (a) => a.id === config.actionId
+        );
+
+        if (!selectedAction?.inputSchema) return null;
+
+        return (
+          <div className="space-y-2">
+            <Label>Action Input Schema</Label>
+            <pre className="rounded-md border bg-muted p-4 text-xs overflow-auto max-h-96">
+              {JSON.stringify(selectedAction.inputSchema, null, 2)}
+            </pre>
+          </div>
+        );
+      })()}
     </>
   );
 }
