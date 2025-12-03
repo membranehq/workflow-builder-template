@@ -80,7 +80,6 @@ import {
 } from "@/lib/workflow-store";
 import { Panel } from "../ai-elements/panel";
 import { DeployButton } from "../deploy-button";
-import { GitHubStarsButton } from "../github-stars-button";
 import { ManageIntegrationsModal } from "../manage-integrations-modal/manage-integrations-modal";
 import { WorkflowIcon } from "../ui/workflow-icon";
 import { UserMenu } from "../workflows/user-menu";
@@ -1188,7 +1187,6 @@ export const WorkflowToolbar = ({ workflowId }: WorkflowToolbarProps) => {
           <div className="flex items-center gap-2">
             {!workflowId && (
               <>
-                <GitHubStarsButton />
                 <DeployButton />
               </>
             )}
