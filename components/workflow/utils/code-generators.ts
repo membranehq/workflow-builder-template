@@ -1,17 +1,13 @@
 /**
  * Code generation utilities for workflow step functions
+ * 
+ * NOTE: Integration actions (Send Email, Slack, Linear, etc.) now run through Membrane SDK
+ * Only System action templates are imported here
  */
 
 import conditionTemplate from "@/lib/codegen-templates/condition";
 import databaseQueryTemplate from "@/lib/codegen-templates/database-query";
 import httpRequestTemplate from "@/lib/codegen-templates/http-request";
-import { generateImageCodegenTemplate } from "@/plugins/ai-gateway/codegen/generate-image";
-import { generateTextCodegenTemplate } from "@/plugins/ai-gateway/codegen/generate-text";
-import { scrapeCodegenTemplate } from "@/plugins/firecrawl/codegen/scrape";
-import { searchCodegenTemplate } from "@/plugins/firecrawl/codegen/search";
-import { createTicketCodegenTemplate } from "@/plugins/linear/codegen/create-ticket";
-import { sendEmailCodegenTemplate } from "@/plugins/resend/codegen/send-email";
-import { sendSlackMessageCodegenTemplate } from "@/plugins/slack/codegen/send-slack-message";
 
 // Generate code snippet for a single node
 export const generateNodeCode = (node: {
@@ -61,34 +57,22 @@ export async function POST(request: NextRequest) {
   if (node.data.type === "action") {
     const actionType = node.data.config?.actionType as string;
 
-    // Map action types to templates
+    // Map System action types to templates
+    // Integration actions now run through Membrane SDK and don't need templates
     switch (actionType) {
-      case "Send Email":
-        return sendEmailCodegenTemplate;
-      case "Send Slack Message":
-        return sendSlackMessageCodegenTemplate;
-      case "Create Ticket":
-      case "Create Linear Issue":
-        return createTicketCodegenTemplate;
-      case "Generate Text":
-        return generateTextCodegenTemplate;
-      case "Generate Image":
-        return generateImageCodegenTemplate;
       case "Database Query":
         return databaseQueryTemplate;
       case "HTTP Request":
         return httpRequestTemplate;
       case "Condition":
         return conditionTemplate;
-      case "Scrape":
-        return scrapeCodegenTemplate;
-      case "Search":
-        return searchCodegenTemplate;
       default:
+        // Integration actions handled by Membrane
         return `async function actionStep(input: Record<string, unknown>) {
   "use step";
   
-  console.log('Executing action');
+  // This action runs through Membrane SDK
+  console.log('Executing Membrane action: ${actionType}');
   return { success: true };
 }`;
     }

@@ -4,7 +4,6 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { Provider } from "jotai";
 import type { ReactNode } from "react";
 import { AuthProvider } from "@/components/auth/provider";
-import { GitHubStarsProvider } from "@/components/github-stars-provider";
 import { MembraneProvider } from "@/components/membrane-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -92,14 +91,13 @@ const RootLayout = async ({ children }: RootLayoutProps) => {
           <Provider>
             <AuthProvider>
               <MembraneProvider>
-                <GitHubStarsProvider stars={stars}>
-                  <ReactFlowProvider>
-                    <PersistentCanvas />
-                    <div className="pointer-events-none relative z-10">
-                      {children}
-                    </div>
-                  </ReactFlowProvider>
-                </GitHubStarsProvider>
+                <ReactFlowProvider>
+                  <PersistentCanvas />
+                  <div className="pointer-events-none relative z-10">
+                    {children}
+                  </div>
+                </ReactFlowProvider>
+
                 <Toaster />
               </MembraneProvider>
             </AuthProvider>

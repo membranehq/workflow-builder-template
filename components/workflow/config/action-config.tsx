@@ -18,9 +18,14 @@ import {
   currentWorkflowNameAtom,
 } from "@/lib/workflow-store";
 import { SchemaBuilder, type SchemaField } from "./schema-builder";
-import { useIntegrations, useActions, type Action } from "@membranehq/react";
+import { useIntegrations, useActions, type Action, useIntegrationApp } from "@membranehq/react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 import Form from "@rjsf/core";
 import type { RJSFSchema } from "@rjsf/utils";
 import validator from "@rjsf/validator-ajv8";
@@ -246,6 +251,12 @@ export function ActionConfig({
   // Fetch integrations from Membrane SDK
   const { items: integrations, loading: integrationsLoading } = useIntegrations();
 
+  // Integration app instance for connecting
+  const integrationApp = useIntegrationApp();
+
+  // State for connection attempt
+  const [isConnecting, setIsConnecting] = useState(false);
+
   // Initialize categories with system category
   const [categories, setCategories] = useState<Category[]>([
     DEFAULT_CATEGORY
@@ -317,6 +328,39 @@ export function ActionConfig({
     }
   };
 
+  // Check if the selected integration is connected
+  const selectedIntegration = categoryType === "Integration"
+    ? integrations.find((int) => int.key === categoryKey)
+    : null;
+
+  const isIntegrationConnected = selectedIntegration?.connection && !selectedIntegration.connection.disconnected;
+
+  const handleConnect = async () => {
+    if (!categoryKey || categoryType !== "Integration") return;
+
+    try {
+      setIsConnecting(true);
+
+      const connection = await integrationApp
+        .integration(categoryKey)
+        .openNewConnection();
+
+      if (!connection?.id) {
+        throw new Error("Connection was not successful");
+      }
+
+      toast.success("Successfully connected", {
+        description: `Connected to ${selectedIntegration?.name || "integration"}`,
+      });
+    } catch (error) {
+      toast.error("Failed to connect", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-2 gap-2">
@@ -330,11 +374,20 @@ export function ActionConfig({
             value={categoryKey || undefined}
           >
             <SelectTrigger className="w-full" id="actionCategory">
-              <SelectValue placeholder={integrationsLoading ? "Loading..." : "Select app or category"} />
+              {integrationsLoading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner className="size-4" />
+                  <span className="text-muted-foreground">Loading...</span>
+                </div>
+              ) : (
+                <SelectValue placeholder="Select app or category" />
+              )}
             </SelectTrigger>
             <SelectContent>
               {integrationsLoading ? (
-                <div className="p-2">
+                <div className="p-2 space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
                   <Skeleton className="h-8 w-full" />
                 </div>
               ) : (
@@ -369,18 +422,25 @@ export function ActionConfig({
           </Label>
           <Select
             key={categoryType ? `${categoryType}-${categoryKey}` : "no-category"}
-            disabled={disabled || !categoryKey || (categoryType === "Integration" && actionsForSelectedIntegration.loading)}
+            disabled={
+              disabled ||
+              !categoryKey ||
+              (categoryType === "Integration" && actionsForSelectedIntegration.loading)
+            }
             onValueChange={handleActionChange}
             value={(config?.actionId as string) || undefined}
           >
             <SelectTrigger className="w-full" id="actionType">
-              <SelectValue placeholder={
-                !categoryType
-                  ? "Select a category first"
-                  : actionsForSelectedIntegration.loading
-                    ? "Loading actions..."
-                    : "Select action"
-              } />
+              {!categoryType ? (
+                <SelectValue placeholder="Select a category first" />
+              ) : categoryType === "Integration" && actionsForSelectedIntegration.loading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner className="size-4" />
+                  <span className="text-muted-foreground">Loading actions...</span>
+                </div>
+              ) : (
+                <SelectValue placeholder="Select action" />
+              )}
             </SelectTrigger>
             <SelectContent>
               {(() => {
@@ -403,6 +463,8 @@ export function ActionConfig({
                   if (actionsForSelectedIntegration.loading) {
                     return (
                       <div className="p-2 space-y-2">
+                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-8 w-full" />
                         <Skeleton className="h-8 w-full" />
                       </div>
                     );
@@ -440,6 +502,34 @@ export function ActionConfig({
           </Select>
         </div>
       </div>
+
+      {/* Connection Alert for Integration */}
+      {categoryType === "Integration" && categoryKey && !isIntegrationConnected && (
+        <Alert variant="default" className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20 items-center">
+          <AlertCircle className="text-yellow-600 dark:text-yellow-500" />
+          <AlertDescription className="flex items-center justify-between gap-2 m-0">
+            <span className="text-yellow-900 dark:text-yellow-100">
+              {selectedIntegration?.name || "Integration"} is not connected
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleConnect}
+              disabled={isConnecting || disabled}
+              className="shrink-0 border-yellow-600 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-500 dark:text-yellow-400 dark:hover:bg-yellow-950"
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="mr-2 size-3 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                "Connect now"
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Database Query fields */}
       {config?.actionId === "Database Query" && categoryType === "System" && (

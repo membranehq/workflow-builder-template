@@ -18,12 +18,19 @@ import { ConnectedIntegrations } from "./connected-integrations";
 
 interface ManageIntegrationsModalProps {
   trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ManageIntegrationsModal({
   trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: ManageIntegrationsModalProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
   const { connections, loading: connectionsIsLoading } = useConnections();
 
   const hasConnectedIntegration = connections.some(
@@ -50,7 +57,10 @@ export function ManageIntegrationsModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      {!trigger && controlledOpen === undefined && (
+        <DialogTrigger asChild>{defaultTrigger}</DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl min-w-[900px]">
         <DialogHeader className="pl-2">
           <DialogTitle>Manage Apps</DialogTitle>

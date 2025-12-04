@@ -11,6 +11,7 @@ import type { WorkflowEdge, WorkflowNode } from "@/lib/workflow-store";
 async function executeWorkflowBackground(
   executionId: string,
   workflowId: string,
+  user: { id: string; name?: string | null; email?: string | null },
   nodes: WorkflowNode[],
   edges: WorkflowEdge[],
   input: Record<string, unknown>
@@ -36,6 +37,7 @@ async function executeWorkflowBackground(
         triggerInput: input,
         executionId,
         workflowId, // Pass workflow ID so steps can fetch credentials
+        user, // Pass full user object for Membrane token generation
       },
     ]);
 
@@ -112,6 +114,11 @@ export async function POST(
     executeWorkflowBackground(
       execution.id,
       workflowId,
+      {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      },
       workflow.nodes as WorkflowNode[],
       workflow.edges as WorkflowEdge[],
       input

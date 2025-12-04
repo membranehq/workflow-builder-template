@@ -19,16 +19,18 @@ export async function generateIntegrationAppCustomerAccessToken(
 
   try {
     const options = {
-      issuer: process.env.INTEGRATION_APP_WORKSPACE_KEY,
       expiresIn,
       algorithm: "HS512" as Algorithm,
     };
 
     return sign(
       {
+        workspaceKey: process.env.INTEGRATION_APP_WORKSPACE_KEY,
         id: tokenData.id,
-        name: tokenData.name || "",
-        email: tokenData.email || "",
+        name: tokenData.name || tokenData.email || tokenData.id,
+        fields: {
+          email: tokenData.email,
+        },
       },
       process.env.INTEGRATION_APP_WORKSPACE_SECRET,
       options

@@ -7,8 +7,8 @@ import {
   AuthDialog,
   isSingleProviderSignInInitiated,
 } from "@/components/auth/dialog";
+import { ManageIntegrationsModal } from "@/components/manage-integrations-modal/manage-integrations-modal";
 import { SettingsDialog } from "@/components/settings";
-import { IntegrationsDialog } from "@/components/settings/integrations-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -164,9 +164,9 @@ export const UserMenu = () => {
         </DropdownMenuItem>
       </DropdownMenuContent>
       <SettingsDialog onOpenChange={setSettingsOpen} open={settingsOpen} />
-      <IntegrationsDialog
-        onOpenChange={setIntegrationsOpen}
+      <ManageIntegrationsModal
         open={integrationsOpen}
+        onOpenChange={setIntegrationsOpen}
       />
     </DropdownMenu>
   );

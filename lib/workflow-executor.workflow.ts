@@ -3,6 +3,8 @@
  * This executor captures step executions through the workflow SDK for better observability
  */
 
+import { IntegrationAppClient } from "@membranehq/sdk";
+import { generateIntegrationAppCustomerAccessToken } from "./integration-app/generateCustomerAccessToken";
 import { getErrorMessageAsync } from "./utils";
 import type { WorkflowEdge, WorkflowNode } from "./workflow-store";
 
@@ -14,12 +16,19 @@ type ExecutionResult = {
 
 type NodeOutputs = Record<string, { label: string; data: unknown }>;
 
+export type WorkflowUser = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+};
+
 export type WorkflowExecutionInput = {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   triggerInput?: Record<string, unknown>;
   executionId?: string;
   workflowId?: string; // Used by steps to fetch credentials
+  user?: WorkflowUser; // Used to generate Membrane access token
 };
 
 /**
@@ -29,11 +38,11 @@ export type WorkflowExecutionInput = {
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Action type dispatch requires branching logic
 async function executeActionStep(input: {
-  actionType: string;
   config: Record<string, unknown>;
   outputs: NodeOutputs;
+  user?: WorkflowUser;
 }) {
-  const { actionType, config } = input;
+  const { config, user } = input;
 
   // Helper to replace template variables in conditions
   // biome-ignore lint/nursery/useMaxParams: Helper function needs all parameters for template replacement
@@ -87,135 +96,186 @@ async function executeActionStep(input: {
     return varName;
   }
 
-  // Build step input WITHOUT credentials, but WITH integrationId reference
-  // Steps will fetch credentials internally using this reference
-  const stepInput: Record<string, unknown> = {
-    ...config,
-    // integrationId is already in config from the node configuration
-  };
+  // Check if this is a Membrane action (Integration type)
+  const categoryType = config.categoryType as string | undefined;
 
-  // Import and execute the appropriate step function
-  // Step functions load credentials from process.env themselves
-  if (actionType === "Send Email") {
-    const { sendEmailStep } = await import(
-      "../plugins/resend/steps/send-email/step"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await sendEmailStep(stepInput as any);
-  }
-  if (actionType === "Send Slack Message") {
-    const { sendSlackMessageStep } = await import(
-      "../plugins/slack/steps/send-slack-message/step"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await sendSlackMessageStep(stepInput as any);
-  }
-  if (actionType === "Create Ticket") {
-    const { createTicketStep } = await import(
-      "../plugins/linear/steps/create-ticket/step"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await createTicketStep(stepInput as any);
-  }
-  if (actionType === "Generate Text") {
-    const { generateTextStep } = await import(
-      "../plugins/ai-gateway/steps/generate-text/step"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await generateTextStep(stepInput as any);
-  }
-  if (actionType === "Generate Image") {
-    const { generateImageStep } = await import(
-      "../plugins/ai-gateway/steps/generate-image/step"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await generateImageStep(stepInput as any);
-  }
-  if (actionType === "Database Query") {
-    const { databaseQueryStep } = await import("./steps/database-query");
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await databaseQueryStep(stepInput as any);
-  }
-  if (actionType === "HTTP Request") {
-    const { httpRequestStep } = await import("./steps/http-request");
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await httpRequestStep(stepInput as any);
-  }
-  if (actionType === "Condition") {
-    const { conditionStep } = await import("./steps/condition");
-    // Special handling for condition: process templates and evaluate as JavaScript
-    // The condition field is kept as original template string for proper evaluation
-    const conditionExpression = stepInput.condition;
-    let evaluatedCondition: boolean;
-
-    console.log("[Condition] Original expression:", conditionExpression);
-
-    if (typeof conditionExpression === "boolean") {
-      evaluatedCondition = conditionExpression;
-    } else if (typeof conditionExpression === "string") {
-      try {
-        const evalContext: Record<string, unknown> = {};
-        let transformedExpression = conditionExpression;
-        const templatePattern = /\{\{@([^:]+):([^}]+)\}\}/g;
-        const varCounter = { value: 0 };
-
-        transformedExpression = transformedExpression.replace(
-          templatePattern,
-          (match, nodeId, rest) =>
-            replaceTemplateVariable(
-              match,
-              nodeId,
-              rest,
-              evalContext,
-              varCounter
-            )
-        );
-
-        const varNames = Object.keys(evalContext);
-        const varValues = Object.values(evalContext);
-
-        const evalFunc = new Function(
-          ...varNames,
-          `return (${transformedExpression});`
-        );
-        const result = evalFunc(...varValues);
-        evaluatedCondition = Boolean(result);
-      } catch (error) {
-        console.error("[Condition] Failed to evaluate condition:", error);
-        console.error("[Condition] Expression was:", conditionExpression);
-        // If evaluation fails, treat as false to be safe
-        evaluatedCondition = false;
+  if (categoryType === "Integration") {
+    // Execute Membrane action via SDK
+    try {
+      if (!user?.id) {
+        return {
+          success: false,
+          error: "User information is required for Membrane actions",
+        };
       }
-    } else {
-      // Coerce to boolean for other types
-      evaluatedCondition = Boolean(conditionExpression);
+
+      const categoryKey = config.categoryKey as string | undefined;
+      const membraneActionId = config.actionId as string | undefined;
+
+      if (!categoryKey || !membraneActionId) {
+        return {
+          success: false,
+          error: "Membrane action requires categoryKey and actionId",
+        };
+      }
+
+      const membraneToken = await generateIntegrationAppCustomerAccessToken({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      });
+
+      // Create Membrane client
+      const membraneClient = new IntegrationAppClient({
+        token: membraneToken,
+      });
+
+      // Prepare input data by removing our internal config fields
+      const membraneInput: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(config)) {
+        // Skip internal workflow config fields
+        if (
+          ![
+            "categoryKey",
+            "categoryType",
+            "actionId",
+            "actionName",
+            "actionLogoUrl",
+          ].includes(key)
+        ) {
+          membraneInput[key] = value;
+        }
+      }
+
+      console.log("[Membrane Action] Executing:", {
+        categoryKey,
+        actionId: membraneActionId,
+        inputKeys: Object.keys(membraneInput),
+      });
+
+      // Execute the action on Membrane
+      const result = await membraneClient
+        .connection(categoryKey)
+        .action(membraneActionId)
+        .run(membraneInput);
+
+      console.log("[Membrane Action] Success:", {
+        hasResult: !!result,
+      });
+
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      console.error("[Membrane Action] Error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error executing Membrane action",
+      };
+    }
+  }
+
+  // Handle System actions (Database Query, HTTP Request, Condition)
+  if (categoryType === "System") {
+    const systemActionId = config.actionId as string | undefined;
+
+    if (!systemActionId) {
+      return {
+        success: false,
+        error: "System action requires actionId",
+      };
     }
 
-    console.log("[Condition] Final result:", evaluatedCondition);
+    // Build step input WITHOUT credentials, but WITH integrationId reference
+    // Steps will fetch credentials internally using this reference
+    const stepInput: Record<string, unknown> = {
+      ...config,
+      // integrationId is already in config from the node configuration
+    };
 
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await conditionStep({ condition: evaluatedCondition } as any);
+    if (systemActionId === "Database Query") {
+      const { databaseQueryStep } = await import("./steps/database-query");
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
+      return await databaseQueryStep(stepInput as any);
+    }
+    if (systemActionId === "HTTP Request") {
+      const { httpRequestStep } = await import("./steps/http-request");
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
+      return await httpRequestStep(stepInput as any);
+    }
+    if (systemActionId === "Condition") {
+      const { conditionStep } = await import("./steps/condition");
+      // Special handling for condition: process templates and evaluate as JavaScript
+      // The condition field is kept as original template string for proper evaluation
+      const conditionExpression = stepInput.condition;
+      let evaluatedCondition: boolean;
+
+      console.log("[Condition] Original expression:", conditionExpression);
+
+      if (typeof conditionExpression === "boolean") {
+        evaluatedCondition = conditionExpression;
+      } else if (typeof conditionExpression === "string") {
+        try {
+          const evalContext: Record<string, unknown> = {};
+          let transformedExpression = conditionExpression;
+          const templatePattern = /\{\{@([^:]+):([^}]+)\}\}/g;
+          const varCounter = { value: 0 };
+
+          transformedExpression = transformedExpression.replace(
+            templatePattern,
+            (match, nodeId, rest) =>
+              replaceTemplateVariable(
+                match,
+                nodeId,
+                rest,
+                evalContext,
+                varCounter
+              )
+          );
+
+          const varNames = Object.keys(evalContext);
+          const varValues = Object.values(evalContext);
+
+          const evalFunc = new Function(
+            ...varNames,
+            `return (${transformedExpression});`
+          );
+          const result = evalFunc(...varValues);
+          evaluatedCondition = Boolean(result);
+        } catch (error) {
+          console.error("[Condition] Failed to evaluate condition:", error);
+          console.error("[Condition] Expression was:", conditionExpression);
+          // If evaluation fails, treat as false to be safe
+          evaluatedCondition = false;
+        }
+      } else {
+        // Coerce to boolean for other types
+        evaluatedCondition = Boolean(conditionExpression);
+      }
+
+      console.log("[Condition] Final result:", evaluatedCondition);
+
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
+      return await conditionStep({ condition: evaluatedCondition } as any);
+    }
+
+    // Unknown System action
+    return {
+      success: false,
+      error: `Unknown System action: ${systemActionId}`,
+    };
   }
 
-  if (actionType === "Scrape") {
-    const { firecrawlScrapeStep } = await import(
-      "../plugins/firecrawl/steps/scrape/step"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await firecrawlScrapeStep(stepInput as any);
-  }
-  if (actionType === "Search") {
-    const { firecrawlSearchStep } = await import(
-      "../plugins/firecrawl/steps/search/step"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic step input type
-    return await firecrawlSearchStep(stepInput as any);
-  }
-
-  // Fallback for unknown action types
+  // Fallback for actions without proper categoryType
   return {
     success: false,
-    error: `Unknown action type: ${actionType}`,
+    error: `Action must have categoryType set to either "Integration" or "System". Received: ${
+      categoryType || "undefined"
+    }`,
   };
 }
 
@@ -304,7 +364,14 @@ export async function executeWorkflow(input: WorkflowExecutionInput) {
 
   console.log("[Workflow Executor] Starting workflow execution");
 
-  const { nodes, edges, triggerInput = {}, executionId, workflowId } = input;
+  const {
+    nodes,
+    edges,
+    triggerInput = {},
+    executionId,
+    workflowId,
+    user,
+  } = input;
 
   console.log("[Workflow Executor] Input:", {
     nodeCount: nodes.length,
@@ -352,7 +419,7 @@ export async function executeWorkflow(input: WorkflowExecutionInput) {
       let nodeName = node.data.label;
       if (!nodeName) {
         if (node.data.type === "action") {
-          nodeName = (node.data.config?.actionType as string) || "Action";
+          nodeName = (node.data.config?.categoryKey as string) || "Action";
         } else if (node.data.type === "trigger") {
           nodeName = (node.data.config?.triggerType as string) || "Trigger";
         } else {
@@ -499,15 +566,19 @@ export async function executeWorkflow(input: WorkflowExecutionInput) {
         });
       } else if (node.data.type === "action") {
         const config = node.data.config || {};
-        const actionType = config.actionType as string | undefined;
+        const actionName = config.actionName as string | undefined;
+        const categoryKey = config.categoryKey as string | undefined;
+        const actionId = config.actionId as string | undefined;
 
-        console.log("[Workflow Executor] Executing action node:", actionType);
+        console.log("[Workflow Executor] Executing action node:", actionName);
 
         // Check if action type is defined
-        if (!actionType) {
+        if (!categoryKey || !actionId) {
           result = {
             success: false,
-            error: `Action node "${node.data.label || node.id}" has no action type configured`,
+            error: `Action node "${
+              node.data.label || node.id
+            }" has no categoryKey or actionId configured`,
           };
 
           await logNodeComplete({
@@ -545,9 +616,9 @@ export async function executeWorkflow(input: WorkflowExecutionInput) {
         // Steps fetch credentials internally using fetchCredentials(integrationId)
         console.log("[Workflow Executor] Calling executeActionStep");
         const stepResult = await executeActionStep({
-          actionType,
           config: processedConfig,
           outputs,
+          user,
         });
 
         console.log("[Workflow Executor] Step result received:", {
@@ -624,7 +695,8 @@ export async function executeWorkflow(input: WorkflowExecutionInput) {
         // Check if this is a condition node
         const isConditionNode =
           node.data.type === "action" &&
-          node.data.config?.actionType === "Condition";
+          node.data.config?.categoryKey === "System" &&
+          node.data.config?.actionId === "Condition";
 
         if (isConditionNode) {
           // For condition nodes, only execute next nodes if condition is true
