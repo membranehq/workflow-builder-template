@@ -33,7 +33,7 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "scripts/discover-plugins.js"  ],
   "exclude": [
     "node_modules",
     "lib/next-boilerplate/**/*.ts",
