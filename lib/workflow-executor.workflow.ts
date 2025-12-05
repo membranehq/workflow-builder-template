@@ -3,8 +3,6 @@
  * This executor captures step executions through the workflow SDK for better observability
  */
 
-import { IntegrationAppClient } from "@membranehq/sdk";
-import { generateIntegrationAppCustomerAccessToken } from "./integration-app/generateCustomerAccessToken";
 import { getErrorMessageAsync } from "./utils";
 import type { WorkflowEdge, WorkflowNode } from "./workflow-store";
 
@@ -100,7 +98,6 @@ async function executeActionStep(input: {
   const categoryType = config.categoryType as string | undefined;
 
   if (categoryType === "Integration") {
-    // Execute Membrane action via SDK
     try {
       if (!user?.id) {
         return {
@@ -115,58 +112,22 @@ async function executeActionStep(input: {
       if (!categoryKey || !membraneActionId) {
         return {
           success: false,
-          error: "Membrane action requires categoryKey and actionId",
+          error: "Integration Action node requires categoryKey and actionId",
         };
       }
 
-      const membraneToken = await generateIntegrationAppCustomerAccessToken({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      });
-
-      // Create Membrane client
-      const membraneClient = new IntegrationAppClient({
-        token: membraneToken,
-      });
-
-      // Prepare input data by removing our internal config fields
-      const membraneInput: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(config)) {
-        // Skip internal workflow config fields
-        if (
-          ![
-            "categoryKey",
-            "categoryType",
-            "actionId",
-            "actionName",
-            "actionLogoUrl",
-          ].includes(key)
-        ) {
-          membraneInput[key] = value;
-        }
-      }
-
-      console.log("[Membrane Action] Executing:", {
-        categoryKey,
+      const { membraneActionStep } = await import("./steps/membrane-action");
+      const result = await membraneActionStep({
         actionId: membraneActionId,
-        inputKeys: Object.keys(membraneInput),
+        input: config.actionInputs as Record<string, unknown>,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
       });
 
-      // Execute the action on Membrane
-      const result = await membraneClient
-        .connection(categoryKey)
-        .action(membraneActionId)
-        .run(membraneInput);
-
-      console.log("[Membrane Action] Success:", {
-        hasResult: !!result,
-      });
-
-      return {
-        success: true,
-        data: result,
-      };
+      return result;
     } catch (error) {
       console.error("[Membrane Action] Error:", error);
       return {
@@ -419,7 +380,7 @@ export async function executeWorkflow(input: WorkflowExecutionInput) {
       let nodeName = node.data.label;
       if (!nodeName) {
         if (node.data.type === "action") {
-          nodeName = (node.data.config?.categoryKey as string) || "Action";
+          nodeName = (node.data.config?.actionName as string) || "Action";
         } else if (node.data.type === "trigger") {
           nodeName = (node.data.config?.triggerType as string) || "Trigger";
         } else {
