@@ -3,7 +3,6 @@
 import { useAtom, useSetAtom } from "jotai";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,6 @@ import {
   hasSidebarBeenShownAtom,
   hasUnsavedChangesAtom,
   isExecutingAtom,
-  isGeneratingAtom,
   isPanelAnimatingAtom,
   isSavingAtom,
   isSidebarCollapsedAtom,
@@ -37,9 +35,7 @@ type WorkflowPageProps = {
 
 const WorkflowEditor = ({ params }: WorkflowPageProps) => {
   const { workflowId } = use(params);
-  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
-  const [isGenerating, setIsGenerating] = useAtom(isGeneratingAtom);
   const [isExecuting, setIsExecuting] = useAtom(isExecutingAtom);
   const [_isSaving, setIsSaving] = useAtom(isSavingAtom);
   const [nodes] = useAtom(nodesAtom);
@@ -223,51 +219,6 @@ const WorkflowEditor = ({ params }: WorkflowPageProps) => {
     nodesRef.current = nodes;
   }, [nodes]);
 
-  // Helper function to generate workflow from AI
-  const generateWorkflowFromAI = useCallback(
-    async (prompt: string) => {
-      setIsGenerating(true);
-      setCurrentWorkflowId(workflowId);
-      setCurrentWorkflowName("AI Generated Workflow");
-
-      try {
-        const workflowData = await api.ai.generate(prompt);
-
-        setNodes(workflowData.nodes || []);
-        setEdges(workflowData.edges || []);
-        setCurrentWorkflowName(workflowData.name || "AI Generated Workflow");
-
-        const selectedNode = workflowData.nodes?.find(
-          (n: { selected?: boolean }) => n.selected
-        );
-        if (selectedNode) {
-          setSelectedNodeId(selectedNode.id);
-        }
-
-        await api.workflow.update(workflowId, {
-          name: workflowData.name,
-          description: workflowData.description,
-          nodes: workflowData.nodes,
-          edges: workflowData.edges,
-        });
-      } catch (error) {
-        console.error("Failed to generate workflow:", error);
-        toast.error("Failed to generate workflow");
-      } finally {
-        setIsGenerating(false);
-      }
-    },
-    [
-      workflowId,
-      setIsGenerating,
-      setCurrentWorkflowId,
-      setCurrentWorkflowName,
-      setNodes,
-      setEdges,
-      setSelectedNodeId,
-    ]
-  );
-
   // Helper function to load existing workflow
   const loadExistingWorkflow = useCallback(async () => {
     try {
@@ -315,42 +266,25 @@ const WorkflowEditor = ({ params }: WorkflowPageProps) => {
 
   useEffect(() => {
     const loadWorkflowData = async () => {
-      const isGeneratingParam = searchParams?.get("generating") === "true";
-      const storedPrompt = sessionStorage.getItem("ai-prompt");
-      const storedWorkflowId = sessionStorage.getItem("generating-workflow-id");
-
       // Check if state is already loaded for this workflow
       if (currentWorkflowId === workflowId && nodes.length > 0) {
         return;
       }
 
-      // Check if we should generate from AI
-      if (
-        isGeneratingParam &&
-        storedPrompt &&
-        storedWorkflowId === workflowId
-      ) {
-        sessionStorage.removeItem("ai-prompt");
-        sessionStorage.removeItem("generating-workflow-id");
-        await generateWorkflowFromAI(storedPrompt);
-      } else {
-        await loadExistingWorkflow();
-      }
+      await loadExistingWorkflow();
     };
 
     loadWorkflowData();
   }, [
     workflowId,
-    searchParams,
     currentWorkflowId,
     nodes.length,
-    generateWorkflowFromAI,
     loadExistingWorkflow,
   ]);
 
   // Keyboard shortcuts
   const handleSave = useCallback(async () => {
-    if (!currentWorkflowId || isGenerating) {
+    if (!currentWorkflowId) {
       return;
     }
     setIsSaving(true);
@@ -367,7 +301,6 @@ const WorkflowEditor = ({ params }: WorkflowPageProps) => {
     currentWorkflowId,
     nodes,
     edges,
-    isGenerating,
     setIsSaving,
     setHasUnsavedChanges,
   ]);
@@ -419,7 +352,6 @@ const WorkflowEditor = ({ params }: WorkflowPageProps) => {
     if (
       isExecuting ||
       nodes.length === 0 ||
-      isGenerating ||
       !currentWorkflowId
     ) {
       return;
@@ -497,7 +429,6 @@ const WorkflowEditor = ({ params }: WorkflowPageProps) => {
     isExecuting,
     nodes,
     edges,
-    isGenerating,
     currentWorkflowId,
     setIsExecuting,
     updateAllNodeStatuses,

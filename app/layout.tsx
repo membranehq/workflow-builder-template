@@ -15,9 +15,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
-  title: "AI Workflow Builder - Visual Workflow Automation",
+  title: "Workflow Builder - Visual Workflow Automation",
   description:
-    "Build powerful AI-driven workflow automations with a visual, node-based editor. Built with Next.js and React Flow.",
+    "Build powerful workflow automations with a visual, node-based editor. Built with Next.js and React Flow.",
   icons: {
     icon: [
       {

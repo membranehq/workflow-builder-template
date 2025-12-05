@@ -16,7 +16,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas } from "@/components/ai-elements/canvas";
 import { Connection } from "@/components/ai-elements/connection";
 import { Controls } from "@/components/ai-elements/controls";
-import { AIPrompt } from "@/components/ai-elements/prompt";
 import { WorkflowToolbar } from "@/components/workflow/workflow-toolbar";
 import "@xyflow/react/dist/style.css";
 
@@ -28,7 +27,6 @@ import {
   currentWorkflowIdAtom,
   edgesAtom,
   hasUnsavedChangesAtom,
-  isGeneratingAtom,
   isPanelAnimatingAtom,
   isTransitioningFromHomepageAtom,
   nodesAtom,
@@ -81,7 +79,6 @@ const edgeTypes = {
 export function WorkflowCanvas() {
   const [nodes, setNodes] = useAtom(nodesAtom);
   const [edges, setEdges] = useAtom(edgesAtom);
-  const [isGenerating] = useAtom(isGeneratingAtom);
   const currentWorkflowId = useAtomValue(currentWorkflowIdAtom);
   const [showMinimap] = useAtom(showMinimapAtom);
   const rightPanelWidth = useAtomValue(rightPanelWidthAtom);
@@ -471,23 +468,23 @@ export function WorkflowCanvas() {
         connectionMode={ConnectionMode.Strict}
         edges={edges}
         edgeTypes={edgeTypes}
-        elementsSelectable={!isGenerating}
+        elementsSelectable
         isValidConnection={isValidConnection}
         nodes={nodes}
-        nodesConnectable={!isGenerating}
-        nodesDraggable={!isGenerating}
+        nodesConnectable
+        nodesDraggable
         nodeTypes={nodeTypes}
-        onConnect={isGenerating ? undefined : onConnect}
-        onConnectEnd={isGenerating ? undefined : onConnectEnd}
-        onConnectStart={isGenerating ? undefined : onConnectStart}
-        onEdgeContextMenu={isGenerating ? undefined : onEdgeContextMenu}
-        onEdgesChange={isGenerating ? undefined : onEdgesChange}
-        onNodeClick={isGenerating ? undefined : onNodeClick}
-        onNodeContextMenu={isGenerating ? undefined : onNodeContextMenu}
-        onNodesChange={isGenerating ? undefined : onNodesChange}
+        onConnect={onConnect}
+        onConnectEnd={onConnectEnd}
+        onConnectStart={onConnectStart}
+        onEdgeContextMenu={onEdgeContextMenu}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={onNodeClick}
+        onNodeContextMenu={onNodeContextMenu}
+        onNodesChange={onNodesChange}
         onPaneClick={onPaneClick}
-        onPaneContextMenu={isGenerating ? undefined : onPaneContextMenu}
-        onSelectionChange={isGenerating ? undefined : onSelectionChange}
+        onPaneContextMenu={onPaneContextMenu}
+        onSelectionChange={onSelectionChange}
       >
         <Panel
           className="workflow-controls-panel border-none bg-transparent p-0"
@@ -499,9 +496,6 @@ export function WorkflowCanvas() {
           <MiniMap bgColor="var(--sidebar)" nodeStrokeColor="var(--border)" />
         )}
       </Canvas>
-
-      {/* AI Prompt */}
-      {currentWorkflowId && <AIPrompt workflowId={currentWorkflowId} />}
 
       {/* Context Menu */}
       <WorkflowContextMenu

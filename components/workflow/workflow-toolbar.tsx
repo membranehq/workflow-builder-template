@@ -63,7 +63,6 @@ import {
   edgesAtom,
   hasUnsavedChangesAtom,
   isExecutingAtom,
-  isGeneratingAtom,
   isSavingAtom,
   nodesAtom,
   propertiesPanelActiveTabAtom,
@@ -307,7 +306,6 @@ function useWorkflowState() {
   const [nodes, setNodes] = useAtom(nodesAtom);
   const [edges, setEdges] = useAtom(edgesAtom);
   const [isExecuting, setIsExecuting] = useAtom(isExecutingAtom);
-  const [isGenerating] = useAtom(isGeneratingAtom);
   const clearWorkflow = useSetAtom(clearWorkflowAtom);
   const updateNodeData = useSetAtom(updateNodeDataAtom);
   const [currentWorkflowId] = useAtom(currentWorkflowIdAtom);
@@ -367,7 +365,6 @@ function useWorkflowState() {
     edges,
     isExecuting,
     setIsExecuting,
-    isGenerating,
     clearWorkflow,
     updateNodeData,
     currentWorkflowId,
@@ -696,7 +693,7 @@ function ToolbarActions({
       <ButtonGroup className="flex lg:hidden" orientation="vertical">
         <Button
           className="border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
-          disabled={state.isGenerating}
+          disabled={false}
           onClick={handleAddStep}
           size="icon"
           title="Add Step"
@@ -764,7 +761,7 @@ function ToolbarActions({
       <ButtonGroup className="hidden lg:flex" orientation="horizontal">
         <Button
           className="border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
-          disabled={state.isGenerating}
+          disabled={false}
           onClick={handleAddStep}
           size="icon"
           title="Add Step"
@@ -778,7 +775,7 @@ function ToolbarActions({
       <ButtonGroup className="flex lg:hidden" orientation="vertical">
         <Button
           className="border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
-          disabled={!state.canUndo || state.isGenerating}
+          disabled={!state.canUndo}
           onClick={() => state.undo()}
           size="icon"
           title="Undo"
@@ -788,7 +785,7 @@ function ToolbarActions({
         </Button>
         <Button
           className="border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
-          disabled={!state.canRedo || state.isGenerating}
+          disabled={!state.canRedo}
           onClick={() => state.redo()}
           size="icon"
           title="Redo"
@@ -802,7 +799,7 @@ function ToolbarActions({
       <ButtonGroup className="hidden lg:flex" orientation="horizontal">
         <Button
           className="border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
-          disabled={!state.canUndo || state.isGenerating}
+          disabled={!state.canUndo}
           onClick={() => state.undo()}
           size="icon"
           title="Undo"
@@ -812,7 +809,7 @@ function ToolbarActions({
         </Button>
         <Button
           className="border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
-          disabled={!state.canRedo || state.isGenerating}
+          disabled={!state.canRedo}
           onClick={() => state.redo()}
           size="icon"
           title="Redo"
@@ -851,7 +848,7 @@ function SaveButton({
     <Button
       className="relative border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
       disabled={
-        !state.currentWorkflowId || state.isGenerating || state.isSaving
+        !state.currentWorkflowId || state.isSaving
       }
       onClick={handleSave}
       size="icon"
@@ -884,7 +881,6 @@ function DownloadButton({
       disabled={
         state.isDownloading ||
         state.nodes.length === 0 ||
-        state.isGenerating ||
         !state.currentWorkflowId
       }
       onClick={handleDownload}
@@ -917,7 +913,7 @@ function RunButtonGroup({
     <Button
       className="border hover:bg-black/5 disabled:opacity-100 dark:hover:bg-white/5 disabled:[&>svg]:text-muted-foreground"
       disabled={
-        state.isExecuting || state.nodes.length === 0 || state.isGenerating
+        state.isExecuting || state.nodes.length === 0
       }
       onClick={() => actions.handleExecute()}
       size="icon"

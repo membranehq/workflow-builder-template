@@ -35,7 +35,6 @@ import {
   deleteNodeAtom,
   deleteSelectedItemsAtom,
   edgesAtom,
-  isGeneratingAtom,
   nodesAtom,
   propertiesPanelActiveTabAtom,
   selectedEdgeAtom,
@@ -136,7 +135,6 @@ export const PanelInner = () => {
   const [selectedEdgeId] = useAtom(selectedEdgeAtom);
   const [nodes] = useAtom(nodesAtom);
   const edges = useAtomValue(edgesAtom);
-  const [isGenerating] = useAtom(isGeneratingAtom);
   const [currentWorkflowId] = useAtom(currentWorkflowIdAtom);
   const [currentWorkflowName, setCurrentWorkflowName] = useAtom(
     currentWorkflowNameAtom
@@ -569,7 +567,7 @@ export const PanelInner = () => {
             {selectedNode.data.type === "trigger" && (
               <TriggerConfig
                 config={selectedNode.data.config || {}}
-                disabled={isGenerating}
+                disabled={false}
                 onUpdateConfig={handleUpdateConfig}
                 workflowId={currentWorkflowId ?? undefined}
               />
@@ -578,7 +576,7 @@ export const PanelInner = () => {
             {selectedNode.data.type === "action" && (
               <ActionConfig
                 config={selectedNode.data.config || {}}
-                disabled={isGenerating}
+                disabled={false}
                 onUpdateConfig={handleUpdateConfig}
               />
             )}
@@ -588,7 +586,7 @@ export const PanelInner = () => {
                 Label
               </Label>
               <Input
-                disabled={isGenerating}
+                disabled={false}
                 id="label"
                 onChange={(e) => handleUpdateLabel(e.target.value)}
                 value={selectedNode.data.label}
@@ -600,7 +598,7 @@ export const PanelInner = () => {
                 Description
               </Label>
               <Input
-                disabled={isGenerating}
+                disabled={false}
                 id="description"
                 onChange={(e) => handleUpdateDescription(e.target.value)}
                 placeholder="Optional description"

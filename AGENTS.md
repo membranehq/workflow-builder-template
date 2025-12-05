@@ -71,7 +71,6 @@ If any of the above commands fail or show errors:
 - **No Server Actions**: Do not create or use server actions (files with `"use server"` directive)
 - **Import Pattern**: Import the API client as `import { api } from "@/lib/api-client"`
 - **Available APIs**:
-  - `api.ai.*` - AI operations (generate workflows)
   - `api.integration.*` - Test integration connections
   - `api.user.*` - User operations (get, update)
   - `api.vercelProject.*` - Vercel project integrations

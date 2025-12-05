@@ -1,8 +1,8 @@
-# AI Workflow Builder Template
+# Workflow Builder Template
 
-A template for building your own AI-driven workflow automation platform. Built on top of Workflow DevKit, this template provides a complete visual workflow builder with real integrations and code generation capabilities.
+A template for building your own workflow automation platform. Built on top of Workflow DevKit, this template provides a complete visual workflow builder with real integrations and code generation capabilities.
 
-![AI Workflow Builder Screenshot](screenshot.png)
+![Workflow Builder Screenshot](screenshot.png)
 
 ## Deploy Your Own
 
@@ -13,7 +13,7 @@ You can deploy your own version of the workflow builder to Vercel with one click
 **What happens during deployment:**
 
 - **Automatic Database Setup**: A Neon Postgres database is automatically created and connected to your project
-- **Environment Configuration**: You'll be prompted to provide required environment variables (Better Auth credentials and AI Gateway API key)
+- **Environment Configuration**: You'll be prompted to provide required environment variables (Better Auth credentials)
 - **Ready to Use**: After deployment, you can start building workflows immediately
 
 ## What's Included
@@ -24,7 +24,6 @@ You can deploy your own version of the workflow builder to Vercel with one click
 - **Code Generation** - Convert workflows to executable TypeScript with `"use workflow"` directive
 - **Execution Tracking** - Monitor workflow runs with detailed logs
 - **Authentication** - Secure user authentication with Better Auth
-- **AI-Powered** - Generate workflows from natural language descriptions using OpenAI
 - **Database** - PostgreSQL with Drizzle ORM for type-safe database access
 - **Modern UI** - Beautiful shadcn/ui components with dark mode support
 
@@ -47,9 +46,6 @@ DATABASE_URL=postgresql://user:password@localhost:5432/workflow_builder
 # Better Auth
 BETTER_AUTH_SECRET=your-secret-key
 BETTER_AUTH_URL=http://localhost:3000
-
-# AI Gateway (for AI workflow generation)
-AI_GATEWAY_API_KEY=your-openai-api-key
 ```
 
 ### Installation
@@ -141,10 +137,6 @@ The generated code includes:
 
 - `GET /api/workflows/{id}/generate-code` - Generate TypeScript code
 - `POST /api/workflows/{id}/generate-code` - Generate with custom options
-
-### AI Generation
-
-- `POST /api/ai/generate-workflow` - Generate workflow from prompt
 
 ## Database Schema
 
@@ -254,7 +246,7 @@ const scrapeResult = await firecrawlScrapeStep({
 
 // Search the web
 const searchResult = await firecrawlSearchStep({
-  query: "AI workflow builders",
+  query: "workflow automation",
   limit: 5,
 });
 ```
@@ -269,7 +261,6 @@ const searchResult = await firecrawlSearchStep({
 - **Authentication**: Better Auth
 - **Code Editor**: Monaco Editor
 - **Workflow Canvas**: React Flow
-- **AI**: OpenAI GPT-5
 - **Type Checking**: TypeScript
 - **Code Quality**: Ultracite (formatter + linter)
 

@@ -25,7 +25,6 @@ export const selectedNodeAtom = atom<string | null>(null);
 export const selectedEdgeAtom = atom<string | null>(null);
 export const isExecutingAtom = atom(false);
 export const isLoadingAtom = atom(false);
-export const isGeneratingAtom = atom(false);
 export const currentWorkflowIdAtom = atom<string | null>(null);
 export const currentWorkflowNameAtom = atom<string>("");
 
